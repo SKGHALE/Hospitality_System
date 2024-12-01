@@ -1,30 +1,18 @@
-// components/LandingPage.jsx
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import Navbar from './Navbar';
+import Image from "../assets/DALL·E 2024-12-01 20.46.50 - A vibrant and inspiring landing page background for a modern tech company. The scene includes abstract, soft gradient patterns in shades of blue, purp.webp"
+import Logo from "../assets/DALL·E 2024-12-01 20.57.01 - A modern and professional logo for a hospitality management system. The design should include elements that represent hospitality, such as a hotel, re.webp"
+const LandingPage= () => {
 
-const LandingPage = () => {
-  const [landingMessage, setLandingMessage] = useState('');
-
-  useEffect(() => {
-    // API call specific to this component
-    axios
-      .get('http://localhost:5001/api/landing')
-      .then((response) => setLandingMessage(response.data.message))
-      .catch((error) => console.error('Error fetching landing page data:', error));
-  }, []);
-
+  const landingMessage = "Welcome To Our Web Page"
   const navigation = [
-    { name: 'Product', href: '#' },
-    { name: 'Features', href: '#' },
-    { name: 'Marketplace', href: '#' },
-    { name: 'Company', href: '#' },
+    // { name: 'Product', href: '#' },
+    // { name: 'Features', href: '#' },
+    { name: 'About Us', href: '#' },
+    { name: 'Contact Us', href: '#' },
   ];
   
 
   return (
-    
-    <div className="bg-white">
+    <div className="bg cover bg-center h-screen" style={{ backgroundImage : `url(${Image})` }}>
       {/* Header Section */}
       <header className="absolute inset-x-0 top-0 z-50">
         <nav
@@ -37,8 +25,8 @@ const LandingPage = () => {
               <span className="sr-only">Your Company</span>
               <img
                 alt="Logo"
-                src="https://tailwindui.com/plus/img/logos/mark.svg?color=indigo&shade=600"
-                className="h-8 w-auto"
+                src={Logo}
+                className="h-20 w-auto"
               />
             </a>
           </div>
@@ -49,7 +37,7 @@ const LandingPage = () => {
               <a
                 key={item.name}
                 href={item.href}
-                className="text-sm font-semibold text-gray-900"
+                className="px-4 py-2 border-1 rounded-lg bg-blue-100 text-sm font-semibold text-gray-900 hover:bg-red-200 transition-all duration-100 "
               >
                 {item.name}
               </a>
@@ -58,7 +46,7 @@ const LandingPage = () => {
 
           {/* Login Button */}
           <div className="hidden lg:flex lg:flex-1 lg:justify-end">
-            <a href="/login" className="text-sm font-semibold text-gray-900">
+            <a href="/login" className="px-4 py-2 border-1 rounded-lg bg-blue-100 text-sm font-semibold text-gray-900 hover:bg-red-200 transition-all duration-100 ">
               Log in <span aria-hidden="true">&rarr;</span>
             </a>
           </div>
@@ -69,10 +57,10 @@ const LandingPage = () => {
       <div className="relative isolate px-6 pt-14 lg:px-8">
         <div className="mx-auto max-w-2xl py-32 sm:py-48 lg:py-56">
           <div className="text-center">
-            <h1 className="text-5xl font-semibold tracking-tight text-gray-900 sm:text-7xl">
-              Data to enrich your online business
+            <h1 className="py-5 mt-5 text-5xl font-semibold border-1 bg-slate-800 rounded-lg text-red-200">
+              Hospitality Management System
             </h1>
-            <p className="mt-8 text-lg font-medium text-gray-500 sm:text-xl">
+            <p className="mt-8 text-lg font-medium border-1  bg-slate-800 rounded-lg text-rose-500 sm:text-xl">
               {landingMessage || 'Loading...'}
             </p>
           </div>
