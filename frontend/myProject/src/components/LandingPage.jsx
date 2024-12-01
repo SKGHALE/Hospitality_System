@@ -1,6 +1,7 @@
 // components/LandingPage.jsx
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import Navbar from './Navbar';
 
 const LandingPage = () => {
   const [landingMessage, setLandingMessage] = useState('');
@@ -19,8 +20,10 @@ const LandingPage = () => {
     { name: 'Marketplace', href: '#' },
     { name: 'Company', href: '#' },
   ];
+  
 
   return (
+    
     <div className="bg-white">
       {/* Header Section */}
       <header className="absolute inset-x-0 top-0 z-50">
@@ -55,7 +58,7 @@ const LandingPage = () => {
 
           {/* Login Button */}
           <div className="hidden lg:flex lg:flex-1 lg:justify-end">
-            <a href="#" className="text-sm font-semibold text-gray-900">
+            <a href="/login" className="text-sm font-semibold text-gray-900">
               Log in <span aria-hidden="true">&rarr;</span>
             </a>
           </div>
