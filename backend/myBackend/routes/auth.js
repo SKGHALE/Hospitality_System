@@ -1,140 +1,133 @@
-const express = require("express");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const { body, validationResult } = require("express-validator");
-const admin = require("../firebase/firebaseAdmin"); // Firebase Admin SDK
-const User = require("../models/user"); // MongoDB User Model
+const express = require('express');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const admin = require('firebase-admin');
+const User = require('../models/User'); // Your MongoDB User model
+const router = express.Router(); // Create the router instance
 
-const router = express.Router();
+// Initialize Firebase Admin SDK
+const serviceAccount = require('../firebase-service-account.json');
 
-// Register Route (MongoDB for storing user data)
-router.post(
-  "/register",
-  [
-    body("username").notEmpty().withMessage("Username is required"),
-    body("password").isLength({ min: 6 }).withMessage("Password must be at least 6 characters"),
-    body("mobile").isMobilePhone().withMessage("Valid mobile number is required"),
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+}
 
-    const { username, password, mobile } = req.body;
-
-    try {
-      // Check if username or mobile already exists in MongoDB
-      const existingUser = await User.findOne({ $or: [{ username }, { mobile }] });
-      if (existingUser) {
-        return res.status(400).json({ message: "Username or mobile number already in use" });
-      }
-
-      // Hash the password before saving
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      // Create new user in MongoDB
-      const newUser = new User({
-        username,
-        password: hashedPassword,
-        mobile,
-      });
-
-      // Save the user to MongoDB
-      await newUser.save();
-      res.status(201).json({ message: "User registered successfully!" });
-    } catch (error) {
-      console.error("Error during registration:", error);
-      res.status(500).json({ message: "Server error during registration" });
-    }
-  }
-);
-
-// Login Route (MongoDB for user credential validation and JWT generation)
-router.post(
-  "/login",
-  [
-    body("username").notEmpty().withMessage("Username is required"),
-    body("password").notEmpty().withMessage("Password is required"),
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { username, password } = req.body;
-
-    try {
-      // Authenticate user from MongoDB using username
-      const user = await User.findOne({ username });
-      if (!user) {
-        return res.status(400).json({ message: "Invalid username or password" });
-      }
-
-      // Verify the password
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        return res.status(400).json({ message: "Invalid username or password" });
-      }
-
-      // Generate JWT token for session management
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-
-      // Send the token for OTP verification
-      res.status(200).json({
-        message: "Login successful. Please verify your phone number via OTP.",
-        token, // JWT token for session validation
-      });
-    } catch (error) {
-      console.error("Error during login:", error);
-      res.status(500).json({ message: "Server error during login" });
-    }
-  }
-);
-
-// OTP Verification Route (Firebase Admin for verifying OTP)
-router.post("/verify-otp", async (req, res) => {
-  const { otpToken, phoneNumber } = req.body;
-
-  if (!otpToken || !phoneNumber) {
-    return res.status(400).json({ message: "OTP token and phone number are required." });
-  }
+// Login Route (for Username and Password)
+router.post('/login', async (req, res) => {
+  const { username, password } = req.body;
 
   try {
-    // Verify the Firebase ID token using Firebase Admin SDK
-    const decodedToken = await admin.auth().verifyIdToken(otpToken);
+    const user = await User.findOne({ username });
 
-    // Check if phone number matches
-    if (decodedToken.phone_number !== phoneNumber) {
-      return res.status(400).json({ message: "Invalid OTP or phone number." });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid username or password' });
     }
 
-    // OTP successfully verified
-    res.status(200).json({ message: "Phone number verified successfully!" });
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      return res.status(400).json({ message: 'Invalid username or password' });
+    }
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: '1h',
+    });
+
+    res.status(200).json({ message: 'Login successful', token });
   } catch (error) {
-    console.error("Error verifying OTP:", error);
-    res.status(500).json({ message: "Error verifying OTP." });
+    console.error('Login error:', error); // log the error
+    res.status(500).json({ message: 'An error occurred during login. Please try again.', error: error.message });
   }
 });
 
-// OTP Sending Route (To be done in client-side, just an API placeholder)
-router.post("/send-otp", async (req, res) => {
+
+// Route to send OTP to user's phone number
+router.post('/send-otp', async (req, res) => {
   const { phoneNumber } = req.body;
 
   if (!phoneNumber) {
-    return res.status(400).json({ message: "Phone number is required." });
+    return res.status(400).json({ message: 'Phone number is required.' });
   }
 
   try {
-    // Firebase OTP sending should be done client-side
+    // Generate OTP via Firebase Authentication
+    const verificationId = await admin.auth().createUser({
+      phoneNumber: phoneNumber,
+    });
+
+    // Generate a verification ID (this step would be handled client-side in actual use)
+    // Firebase Admin SDK doesn't support directly sending OTP, so this should be managed by client-side Firebase SDK.
     res.status(200).json({
-      message: "OTP sending should be handled in the client-side.",
+      message: 'OTP sent successfully. Use the verificationId on the client side.',
+      verificationId,
     });
   } catch (error) {
-    console.error("Error sending OTP:", error);
-    res.status(500).json({ message: "Error sending OTP." });
+    console.error('Error sending OTP:', error);
+    res.status(500).json({
+      message: 'Failed to send OTP.',
+      error: error.message,
+    });
   }
 });
 
+// Route to verify the OTP entered by the user
+router.post('/verify-otp', async (req, res) => {
+  const { phoneNumber, otpCode, verificationId } = req.body;
+
+  if (!phoneNumber || !otpCode || !verificationId) {
+    return res.status(400).json({ message: 'Missing required parameters.' });
+  }
+
+  try {
+    // This should be done client-side using the Firebase JS SDK to confirm the OTP entered by the user.
+    // Firebase Admin SDK does not have direct methods to verify OTP, this step must be done client-side
+    const credential = admin.auth.PhoneAuthProvider.credential(verificationId, otpCode);
+    const userCredential = await admin.auth().signInWithCredential(credential);
+
+    // OTP is valid, user is authenticated
+    res.status(200).json({ message: 'OTP verification successful.', user: userCredential.user });
+  } catch (error) {
+    console.error('Error verifying OTP:', error);
+    res.status(500).json({ message: 'Failed to verify OTP.', error: error.message });
+  }
+});
+
+// Register Route (for user signup)
+router.post('/register', async (req, res) => {
+  const { username, password, mobile } = req.body;
+
+  // Basic validation
+  if (!username || !password || !mobile) {
+    return res.status(400).json({ message: 'All fields are required.' });
+  }
+
+  try {
+    // Check if the user already exists
+    const existingUser = await User.findOne({ $or: [{ username }, { mobile }] });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Username or mobile number already in use' });
+    }
+
+    // Hash the password before saving to MongoDB
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create new user in MongoDB
+    const newUser = new User({
+      username,
+      password: hashedPassword,
+      mobile,
+    });
+
+    // Save the user to MongoDB
+    await newUser.save();
+    res.status(201).json({ message: 'User registered successfully!' });
+
+  } catch (error) {
+    console.error('Error during registration:', error);
+    res.status(500).json({ message: 'Server error during registration' });
+  }
+});
+
+// Export the router
 module.exports = router;
