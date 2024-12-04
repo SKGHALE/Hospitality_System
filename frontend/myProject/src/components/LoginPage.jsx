@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axios from "axios"; // Import axios for API calls
 
 const LoginPage = () => {
   const [showOTP, setShowOTP] = useState(false);
@@ -11,8 +11,7 @@ const LoginPage = () => {
     mobile: "",
     otp: Array(6).fill(""),
   });
-  const [isLoading, setIsLoading] = useState(false); // For loading indicator
-  const [otpLoading, setOtpLoading] = useState(false); // For OTP submission loading
+  const [isLoading, setIsLoading] = useState(false); // For showing a loading state
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -38,8 +37,7 @@ const LoginPage = () => {
       });
       console.log("Login Response:", response.data);
       if (response.data.success) {
-        setShowOTP(true); // Proceed to OTP entry
-        alert(response.data.message || "OTP sent successfully!");
+        setShowOTP(true); // Show OTP form
       } else {
         alert(response.data.message || "Login failed. Please try again.");
       }
@@ -51,31 +49,15 @@ const LoginPage = () => {
     }
   };
 
-  const handleOTPSubmit = async (e) => {
+  const handleOTPSubmit = (e) => {
     e.preventDefault();
-    setOtpLoading(true);
-    try {
-      const otp = formData.otp.join(""); // Combine the six digits
-      if (otp.length === 6) {
-        const response = await axios.post("http://localhost:5001/api/auth/send-otp", {
-          mobile: formData.mobile,
-          otp: otp,
-        });
-        console.log("OTP Verification Response:", response.data);
-        if (response.data.success) {
-          alert("Login successful!");
-          navigate("/navbar"); // Redirect to Navbar page
-        } else {
-          alert(response.data.message || "OTP verification failed. Please try again.");
-        }
-      } else {
-        alert("Please enter a 6-digit OTP!");
-      }
-    } catch (error) {
-      console.error("OTP Verification Error:", error);
-      alert("An error occurred during OTP verification. Please try again.");
-    } finally {
-      setOtpLoading(false);
+    const otp = formData.otp.join(""); // Combine the six digits
+    if (otp.length === 6) {
+      console.log("OTP:", otp);
+      alert("Login successful!");
+      navigate("/navbar"); // Redirect to Navbar page
+    } else {
+      alert("Please enter a 6-digit OTP!");
     }
   };
 
@@ -139,7 +121,7 @@ const LoginPage = () => {
               type="submit"
               className="group relative flex w-full justify-center rounded-md bg-indigo-600 py-2 px-4 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
-              {otpLoading ? "Verifying..." : "Verify OTP"}
+              Verify OTP
             </button>
           </form>
         )}
