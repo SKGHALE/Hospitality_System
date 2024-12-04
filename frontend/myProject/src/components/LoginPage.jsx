@@ -1,15 +1,18 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const LoginPage = () => {
   const [showOTP, setShowOTP] = useState(false);
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: "",
     password: "",
     mobile: "",
     otp: Array(6).fill(""),
   });
+  const [isLoading, setIsLoading] = useState(false); // For loading indicator
+  const [otpLoading, setOtpLoading] = useState(false); // For OTP submission loading
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -24,21 +27,55 @@ const LoginPage = () => {
     }
   };
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    console.log("Login Data:", formData.username, formData.password, formData.mobile);
-    setShowOTP(true); // Show OTP form
+    setIsLoading(true);
+    try {
+      const response = await axios.post("http://localhost:5001/api/auth/login", {
+        username: formData.username,
+        password: formData.password,
+        mobile: formData.mobile,
+      });
+      console.log("Login Response:", response.data);
+      if (response.data.success) {
+        setShowOTP(true); // Proceed to OTP entry
+        alert(response.data.message || "OTP sent successfully!");
+      } else {
+        alert(response.data.message || "Login failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Login Error:", error);
+      alert("An error occurred during login. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleOTPSubmit = (e) => {
+  const handleOTPSubmit = async (e) => {
     e.preventDefault();
-    const otp = formData.otp.join(""); // Combine the six digits
-    if (otp.length === 6) {
-      console.log("OTP:", otp);
-      alert("Login successful!");
-      navigate("/navbar"); // Redirect to Navbar page
-    } else {
-      alert("Please enter a 6-digit OTP!");
+    setOtpLoading(true);
+    try {
+      const otp = formData.otp.join(""); // Combine the six digits
+      if (otp.length === 6) {
+        const response = await axios.post("http://localhost:5001/api/auth/send-otp", {
+          mobile: formData.mobile,
+          otp: otp,
+        });
+        console.log("OTP Verification Response:", response.data);
+        if (response.data.success) {
+          alert("Login successful!");
+          navigate("/navbar"); // Redirect to Navbar page
+        } else {
+          alert(response.data.message || "OTP verification failed. Please try again.");
+        }
+      } else {
+        alert("Please enter a 6-digit OTP!");
+      }
+    } catch (error) {
+      console.error("OTP Verification Error:", error);
+      alert("An error occurred during OTP verification. Please try again.");
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -80,7 +117,7 @@ const LoginPage = () => {
               type="submit"
               className="group relative flex w-full justify-center rounded-md bg-indigo-600 py-2 px-4 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
-              Submit
+              {isLoading ? "Loading..." : "Submit"}
             </button>
           </form>
         ) : (
@@ -102,7 +139,7 @@ const LoginPage = () => {
               type="submit"
               className="group relative flex w-full justify-center rounded-md bg-indigo-600 py-2 px-4 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
-              Verify OTP
+              {otpLoading ? "Verifying..." : "Verify OTP"}
             </button>
           </form>
         )}
