@@ -1,6 +1,8 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios"; // Import axios for API calls
+import { auth } from '../firebaseConfig'; // Firebase initialization
+import { RecaptchaVerifier, signInWithPhoneNumber, PhoneAuthProvider, signInWithCredential } from "firebase/auth";
+import axios from "axios";
 
 const LoginPage = () => {
   const [showOTP, setShowOTP] = useState(false);
@@ -8,16 +10,19 @@ const LoginPage = () => {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    mobile: "",
     otp: Array(6).fill(""),
   });
-  const [isLoading, setIsLoading] = useState(false); // For showing a loading state
+  const [isLoading, setIsLoading] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState(null);
+  const [mobileNumber, setMobileNumber] = useState("");  // Store the mobile number
 
+  // Handle form field changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({ ...prevData, [name]: value }));
   };
 
+  // Handle OTP input
   const handleOTPChange = (value, index) => {
     if (/^\d?$/.test(value)) {
       const updatedOTP = [...formData.otp];
@@ -26,6 +31,7 @@ const LoginPage = () => {
     }
   };
 
+  // Handle login form submission
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -33,29 +39,67 @@ const LoginPage = () => {
       const response = await axios.post("http://localhost:5001/api/auth/login", {
         username: formData.username,
         password: formData.password,
-        mobile: formData.mobile,
       });
+
       console.log("Login Response:", response.data);
-      if (response.data.success) {
-        setShowOTP(true); // Show OTP form
+
+      if (response.data.token) {
+        // Assuming the response contains the mobile number
+        setMobileNumber(response.data.mobile);
+        await sendOTP(response.data.mobile); // Send OTP to the mobile number
+        setShowOTP(true); // Show OTP input form
       } else {
         alert(response.data.message || "Login failed. Please try again.");
       }
     } catch (error) {
-      console.error("Login Error:", error);
+      console.error("Login Error:", error.response || error.message); // log the error response
       alert("An error occurred during login. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleOTPSubmit = (e) => {
+  // Send OTP to the user's mobile
+  const sendOTP = async (mobile) => {
+    try {
+      const recaptchaVerifier = new RecaptchaVerifier("recaptcha-container", {
+        size: "invisible", // Invisible reCAPTCHA
+        callback: (response) => {
+          console.log("reCAPTCHA resolved:", response);
+        },
+      }, auth);
+
+      // Send OTP using Firebase's phone authentication
+      const phoneNumber = `+${mobile}`; // Add the country code
+      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+
+      // Store the confirmation result (needed for verification)
+      setConfirmationResult(confirmationResult);
+      alert("OTP sent to your mobile number.");
+    } catch (error) {
+      console.error("Error sending OTP:", error);
+      alert("Failed to send OTP. Please try again.");
+    }
+  };
+
+  // Handle OTP submission
+  const handleOTPSubmit = async (e) => {
     e.preventDefault();
-    const otp = formData.otp.join(""); // Combine the six digits
+    const otp = formData.otp.join(""); // Combine OTP digits
     if (otp.length === 6) {
-      console.log("OTP:", otp);
-      alert("Login successful!");
-      navigate("/navbar"); // Redirect to Navbar page
+      try {
+        const credential = PhoneAuthProvider.credential(confirmationResult.verificationId, otp);
+        const userCredential = await signInWithCredential(auth, credential);
+
+        console.log("OTP verification response:", userCredential);
+
+        // OTP verification successful
+        alert("Login successful!");
+        navigate("/dashboard"); // Redirect to the dashboard
+      } catch (error) {
+        console.error("OTP Verification Error:", error);
+        alert("OTP verification failed. Please try again.");
+      }
     } else {
       alert("Please enter a 6-digit OTP!");
     }
@@ -82,14 +126,6 @@ const LoginPage = () => {
                 type="password"
                 name="password"
                 placeholder="Password"
-                onChange={handleChange}
-                required
-                className="block w-full appearance-none rounded-md border px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              />
-              <input
-                type="text"
-                name="mobile"
-                placeholder="Mobile Number"
                 onChange={handleChange}
                 required
                 className="block w-full appearance-none rounded-md border px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"

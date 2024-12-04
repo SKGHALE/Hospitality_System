@@ -15,8 +15,8 @@ mongoose
   .then(() => console.log('MongoDB connected successfully'))
   .catch((err) => console.error('Error connecting to MongoDB:', err));
 
-// Routes
-app.use('/api/auth', require('./routes/auth'));  // Import and use authentication routes
+// Import and use authentication routes
+app.use('/api/auth', require('./routes/auth'));  
 
 // Start the server
 const PORT = process.env.PORT || 5001;
