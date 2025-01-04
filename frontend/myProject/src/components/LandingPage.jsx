@@ -1,6 +1,6 @@
-import Image from "../assets/DALL·E 2024-12-01 20.46.50 - A vibrant and inspiring landing page background for a modern tech company. The scene includes abstract, soft gradient patterns in shades of blue, purp.webp"
+import Image from "../assets/Image.jpg"
 import Logo from "../assets/DALL·E 2024-12-01 20.57.01 - A modern and professional logo for a hospitality management system. The design should include elements that represent hospitality, such as a hotel, re.webp"
-const LandingPage= () => {
+const LandingPage = () => {
 
   const landingMessage = "Welcome To Our Web Page"
   const navigation = [
@@ -9,10 +9,10 @@ const LandingPage= () => {
     { name: 'About Us', href: '#' },
     { name: 'Contact Us', href: '#' },
   ];
-  
+
 
   return (
-    <div className="bg cover bg-center h-screen" style={{ backgroundImage : `url(${Image})` }}>
+    <div className="bg cover bg-center h-screen" style={{ backgroundImage: `url(${Image})` }}>
       {/* Header Section */}
       <header className="absolute inset-x-0 top-0 z-50">
         <nav

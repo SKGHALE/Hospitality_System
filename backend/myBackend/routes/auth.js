@@ -33,11 +33,17 @@ router.post("/login", async (req, res) => {
 
 // Register Route
 router.post("/register", async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, mobile } = req.body;
 
-  // Basic validation
-  if (!username || !password) {
+  // Basic validation for fields
+  if (!username || !password || !mobile) {
     return res.status(400).json({ message: "All fields are required." });
+  }
+
+  // Optional: Validate mobile number format (if required)
+  const mobileRegex = /^[+]?[0-9]{10,15}$/; // Regex for phone number validation
+  if (!mobileRegex.test(mobile)) {
+    return res.status(400).json({ message: "Invalid mobile number format" });
   }
 
   try {
@@ -47,11 +53,17 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ message: "Username already in use" });
     }
 
+    // Check if mobile number is already in use
+    const existingMobile = await User.findOne({ mobile });
+    if (existingMobile) {
+      return res.status(400).json({ message: "Mobile number already in use" });
+    }
+
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Save the new user
-    const newUser = new User({ username, password: hashedPassword });
+    const newUser = new User({ username, password: hashedPassword, mobile });
     await newUser.save();
 
     res.status(201).json({ message: "User registered successfully!" });
