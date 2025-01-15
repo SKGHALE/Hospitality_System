@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom";
-import { OTPInput } from "./Otp-input";
-import Image from "../assets/image.jpg";
-import RegisterForm from './RegisterForm'; // Import the RegisterForm component
+import { OTPInput } from "./Otp-input.jsx";
+import Image from "../assets/Image.jpg";
+import RegisterForm from './RegisterForm.jsx';
+import { loginWithPassword, sendOtp, verifyOtp } from '../../api.js';
 
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState('password');
@@ -12,59 +13,56 @@ export default function LoginPage() {
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showRegister, setShowRegister] = useState(false); // State to toggle register form
+  const [showRegister, setShowRegister] = useState(false);
   const navigate = useNavigate();
 
   const handlePasswordLogin = async (e) => {
     e.preventDefault();
-    setError(''); // Reset any previous errors
+    setError('');
+    setLoading(true);
 
-    // Validate username and password
-    if (username && password) {
-      console.log('Password login attempted with:', { username, password });
-      setLoading(true); // Show loading state
-
-      try {
-        const response = await fetch('http://localhost:5001/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ username, password }),
-        });
-
-        const data = await response.json();
-        setLoading(false); // Hide loading state
-
-        if (response.ok) {
-          console.log('Login successful:', data);
-          navigate('/dashboard'); // Redirect to dashboard
-        } else {
-          setError(data.message || 'Login failed. Please check your credentials.');
-        }
-      } catch (error) {
-        setLoading(false); // Hide loading state
-        console.error('Error during login:', error);
-        setError('An error occurred. Please try again later.');
-      }
-    } else {
-      alert('Please fill out all fields.');
+    try {
+      const data = await loginWithPassword(username, password);
+      console.log('Login successful:', data);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error during login:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleOtpLogin = (e) => {
+  const handleSendOtp = async () => {
+    setError('');
+    setLoading(true);
+
+    try {
+      const data = await sendOtp(mobileNumber);
+      console.log('OTP sent:', data);
+    } catch (error) {
+      console.error('Error sending OTP:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOtpLogin = async (e) => {
     e.preventDefault();
-    // Mock OTP login logic
-    if (mobileNumber && otp) {
-      console.log('OTP login attempted with:', { mobileNumber, otp });
-      navigate('/dashboard'); // Redirect to dashboard
-    } else {
-      alert('Please fill out all fields.');
-    }
-  };
+    setError('');
+    setLoading(true);
 
-  const handleSendOtp = () => {
-    console.log('Sending OTP to:', mobileNumber);
+    try {
+      const data = await verifyOtp(mobileNumber, otp);
+      console.log('OTP verification successful:', data);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOtpComplete = (completedOtp) => {
@@ -73,8 +71,8 @@ export default function LoginPage() {
   };
 
   const handleShowRegister = () => {
-    setShowRegister(true); // Show register form
-    setActiveTab('password'); // Reset to password tab when register form opens
+    setShowRegister(true);
+    setActiveTab('password');
   };
 
   return (
@@ -100,21 +98,19 @@ export default function LoginPage() {
             <button
               onClick={() => setActiveTab('otp')}
               className={`flex-1 py-2 rounded-md ${activeTab === 'otp' && !showRegister ? 'bg-white bg-opacity-30' : ''}`}
-              disabled={showRegister} // Disable mobile number tab if register form is visible
+              disabled={showRegister}
             >
               Mobile Number
             </button>
           </div>
         </div>
 
-        {/* Conditional rendering based on showRegister */}
         {showRegister ? (
           <RegisterForm setShowRegister={setShowRegister} />
         ) : (
           <>
             {activeTab === 'password' ? (
               <form onSubmit={handlePasswordLogin} className="space-y-6">
-                {/* Login form for Password */}
                 <div>
                   <label htmlFor="username" className="block text-white mb-1">Username</label>
                   <input
@@ -137,14 +133,12 @@ export default function LoginPage() {
                     className="w-full px-3 py-2 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-600 text-white placeholder-white placeholder-opacity-70"
                   />
                 </div>
-
                 <button
                   type="submit"
                   className="w-full py-2 px-4 bg-white text-purple-600 rounded-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-opacity-50 transition-colors"
                 >
                   Sign In
                 </button>
-
                 <div className="mt-4 text-center text-sm text-white">
                   Don't have an account?{' '}
                   <a
@@ -152,7 +146,7 @@ export default function LoginPage() {
                     className="font-medium hover:underline"
                     onClick={(e) => {
                       e.preventDefault();
-                      handleShowRegister(); // Toggle to show the Register form and reset to password tab
+                      handleShowRegister();
                     }}
                   >
                     Sign up
@@ -161,7 +155,6 @@ export default function LoginPage() {
               </form>
             ) : (
               <form onSubmit={handleOtpLogin} className="space-y-6">
-                {/* OTP Login */}
                 <div>
                   <label htmlFor="mobileNumber" className="block text-white mb-1">Mobile Number</label>
                   <input
@@ -180,9 +173,7 @@ export default function LoginPage() {
                 >
                   Send OTP
                 </button>
-
                 <OTPInput onComplete={handleOtpComplete} />
-
                 <button
                   type="submit"
                   className="w-full py-2 px-4 bg-white text-purple-600 rounded-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-opacity-50 transition-colors"

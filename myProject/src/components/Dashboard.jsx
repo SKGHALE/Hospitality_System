@@ -1,8 +1,8 @@
 'use client'
 import React from 'react'
 import { BookOpen, Users, ArrowUp, DollarSign } from 'lucide-react'
-import { Sidebar } from './Sidebar'
-import Navbar from './Navbar'
+import { Sidebar } from '../layout/Sidebar'
+import Navbar from '../layout/Navbar'
 
 export default function DashboardContent() {
   const bookStats = [

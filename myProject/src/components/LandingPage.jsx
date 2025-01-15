@@ -1,11 +1,10 @@
 import Image from "../assets/Image.jpg"
-import Logo from "../assets/DALL·E 2024-12-01 20.57.01 - A modern and professional logo for a hospitality management system. The design should include elements that represent hospitality, such as a hotel, re.webp"
+import Logo from "../assets/Image.jpg"
 const LandingPage = () => {
 
   const landingMessage = "Welcome To Our Web Page"
   const navigation = [
-    // { name: 'Product', href: '#' },
-    // { name: 'Features', href: '#' },
+
     { name: 'About Us', href: '#' },
     { name: 'Contact Us', href: '#' },
   ];
